@@ -13,12 +13,18 @@ const {
     resolveGenerationSteps,
     resolveGuidanceScale,
 } = require('./localInferenceRuntime');
+const {
+    LOCAL_AI_DIR_ENV,
+    resolveLocalAiPaths,
+} = require('./localInferencePaths');
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
-const DATA_DIR = path.join(app.getPath('userData'), 'local-ai');
-const BIN_DIR = path.join(DATA_DIR, 'bin');
-const MODELS_DIR = path.join(DATA_DIR, 'models');
-const TMP_DIR = path.join(DATA_DIR, 'tmp');
+const {
+    dataDir: DATA_DIR,
+    binDir: BIN_DIR,
+    modelsDir: MODELS_DIR,
+    tmpDir: TMP_DIR,
+} = resolveLocalAiPaths({ userDataPath: app.getPath('userData') });
 
 for (const dir of [BIN_DIR, MODELS_DIR, TMP_DIR]) {
     fs.mkdirSync(dir, { recursive: true });
@@ -201,7 +207,13 @@ function ensureBundledBinaryInstalled() {
 
 async function getBinaryStatus() {
     const exists = ensureBundledBinaryInstalled() || fs.existsSync(BINARY_PATH);
-    return { exists, path: BINARY_PATH };
+    return {
+        exists,
+        path: BINARY_PATH,
+        dataDir: DATA_DIR,
+        modelsDir: MODELS_DIR,
+        envVar: LOCAL_AI_DIR_ENV,
+    };
 }
 
 // Metal-enabled binaries hosted on our own release (macOS arm64 only).

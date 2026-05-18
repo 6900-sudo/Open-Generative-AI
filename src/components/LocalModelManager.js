@@ -368,15 +368,29 @@ export function LocalModelManager() {
     const modelsSection = document.createElement('div');
     modelsSection.className = 'flex flex-col gap-3';
     modelsSection.innerHTML = `
-        <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-secondary uppercase tracking-wider">Local Models</h3>
-            <span class="text-[10px] text-muted">Stored in your app data folder</span>
+        <div class="flex items-center justify-between gap-3">
+            <h3 class="text-xs font-bold text-secondary uppercase tracking-wider shrink-0">Local Models</h3>
+            <span id="local-model-storage" class="min-w-0 truncate text-right text-[10px] text-muted">Checking storage...</span>
         </div>
         <div id="local-model-list" class="flex flex-col gap-3"></div>
     `;
     root.appendChild(modelsSection);
 
     const listEl = modelsSection.querySelector('#local-model-list');
+    const storageEl = modelsSection.querySelector('#local-model-storage');
+
+    const refreshStorageInfo = async () => {
+        try {
+            const status = await localAI.getBinaryStatus();
+            const storagePath = status.modelsDir || status.dataDir;
+            storageEl.textContent = storagePath ? `Stored in ${storagePath}` : 'Stored in your app data folder';
+            if (storagePath && status.envVar) {
+                storageEl.title = `Set ${status.envVar} before launch to change this location`;
+            }
+        } catch (_) {
+            storageEl.textContent = 'Stored in your app data folder';
+        }
+    };
 
     const renderModels = async () => {
         listEl.innerHTML = `<div class="text-xs text-muted text-center py-4">Loading...</div>`;
@@ -391,6 +405,7 @@ export function LocalModelManager() {
         }
     };
 
+    refreshStorageInfo();
     renderModels();
 
     return root;

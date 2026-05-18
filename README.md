@@ -159,6 +159,18 @@ Both engines share the same UI: open **Settings → Local Models** to configure 
 
 All downloads happen inside the app. Nothing is installed system-wide.
 
+By default, `sd.cpp` stores the engine, model weights, and temporary downloads under Electron's app data directory. Common paths are:
+
+- macOS: `~/Library/Application Support/open-generative-ai/local-ai`
+- Windows: `%APPDATA%\open-generative-ai\local-ai`
+- Linux: `~/.config/open-generative-ai/local-ai`
+
+To keep multi-GB model weights on another drive, set `OPEN_GENERATIVE_AI_LOCAL_AI_DIR`
+before launching the desktop app. The app will create `bin/`, `models/`, and `tmp/`
+inside that directory, and **Settings -> Local Models** shows the resolved model folder.
+Local engine output and download errors are written to the app process console, so launch
+from Terminal or PowerShell when you need troubleshooting logs.
+
 ### Engine 2 — Wan2GP (remote Gradio server)
 
 The app does **not** bundle Python or model weights for Wan2GP. You run Wan2GP yourself on a machine with a CUDA or ROCm GPU and point the desktop app at its URL.
@@ -198,7 +210,7 @@ If you want to confirm sd.cpp is installed correctly without going through the U
 
 ```bash
 # 1. App data layout (created on first app launch)
-APP_DATA="$HOME/Library/Application Support/open-generative-ai/local-ai"
+APP_DATA="${OPEN_GENERATIVE_AI_LOCAL_AI_DIR:-$HOME/Library/Application Support/open-generative-ai/local-ai}"
 ls "$APP_DATA/bin"     # sd-cli, libstable-diffusion.dylib
 ls "$APP_DATA/models"  # whatever you've downloaded
 
