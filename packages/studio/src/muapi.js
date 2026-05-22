@@ -1,4 +1,4 @@
-import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV2VModelById, getLipSyncModelById } from './models.js';
+import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV2VModelById, getLipSyncModelById, getAudioModelById } from './models.js';
 
 // In an http(s) browser we route through the host app's proxy (Next.js routes
 // under /api/* re-issue the call server-side) so api.muapi.ai CORS is bypassed.
@@ -174,6 +174,19 @@ export async function processLipSync(apiKey, params) {
     if (modelInfo?.hasPrompt) payload.prompt = params.prompt || '';
     if (params.resolution) payload.resolution = params.resolution;
     if (params.seed !== undefined && params.seed !== -1) payload.seed = params.seed;
+    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+}
+
+export async function generateAudio(apiKey, params) {
+    const modelInfo = getAudioModelById(params.model);
+    const endpoint = modelInfo?.endpoint || params.model;
+    const payload = {};
+    const skipKeys = ['model', 'onRequestId'];
+    for (const key in params) {
+        if (!skipKeys.includes(key) && params[key] !== undefined && params[key] !== null) {
+            payload[key] = params[key];
+        }
+    }
     return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
 }
 
