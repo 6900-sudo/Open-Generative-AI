@@ -6,13 +6,16 @@ module.exports = {
         "./app/**/*.{js,ts,jsx,tsx}",
         "./components/**/*.{js,ts,jsx,tsx}",
         "./packages/studio/src/**/*.{js,jsx}",
+        "./packages/Open-AI-Design-Agent/packages/design-agent/src/**/*.{js,jsx}",
+        "./packages/Open-Poe-AI/packages/agents/src/**/*.{js,jsx,ts,tsx}",
+        "./packages/Vibe-Workflow/packages/workflow-builder/src/**/*.{js,jsx,ts,tsx}",
     ],
     theme: {
         extend: {
             colors: {
                 primary: {
-                    DEFAULT: '#d9ff00',
-                    hover: '#c4e600',
+                    DEFAULT: '#22d3ee',
+                    hover: '#06b6d4',
                 },
                 'app-bg': '#050505',
                 'panel-bg': '#0a0a0a',
@@ -29,7 +32,7 @@ module.exports = {
                 '3xl': '2rem',
             },
             boxShadow: {
-                'glow': '0 0 20px rgba(217, 255, 0, 0.4)',
+                'glow': '0 0 20px rgba(34, 211, 238, 0.4)',
                 'glow-accent': '0 0 20px rgba(168, 85, 247, 0.4)',
                 '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.8)',
             }

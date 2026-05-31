@@ -1,7 +1,18 @@
-import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV2VModelById, getLipSyncModelById } from './models.js';
+import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV2VModelById, getLipSyncModelById, getAudioModelById } from './models.js';
 
-const BASE_URL = 'https://api.muapi.ai';
+// In an http(s) browser we route through the host app's proxy (Next.js routes
+// under /api/* re-issue the call server-side) so api.muapi.ai CORS is bypassed.
+// SSR (no window) and Electron's file:// renderer call the upstream directly.
+const BASE_URL = (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http'))
+    ? '/api'
+    : 'https://api.muapi.ai';
 const PROXY_WF_BASE = '/api/workflow';
+
+function notifyAuthRequired(status, detail) {
+    if (typeof window === 'undefined') return;
+    if (status !== 401 && status !== 403) return;
+    window.dispatchEvent(new CustomEvent('muapi:auth-required', { detail: { status, message: detail } }));
+}
 
 async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000) {
     const pollUrl = `${BASE_URL}/api/v1/predictions/${requestId}/result`;
@@ -14,6 +25,7 @@ async function pollForResult(requestId, key, maxAttempts = 900, interval = 2000)
             if (!response.ok) {
                 const errText = await response.text();
                 if (response.status >= 500) continue;
+                notifyAuthRequired(response.status, errText);
                 throw new Error(`Poll Failed: ${response.status} - ${errText.slice(0, 100)}`);
             }
             const data = await response.json();
@@ -36,6 +48,7 @@ async function submitAndPoll(endpoint, payload, key, onRequestId, maxAttempts = 
     });
     if (!response.ok) {
         const errText = await response.text();
+        notifyAuthRequired(response.status, errText);
         throw new Error(`API Request Failed: ${response.status} ${response.statusText} - ${errText.slice(0, 100)}`);
     }
     const submitData = await response.json();
@@ -80,6 +93,9 @@ export async function generateI2I(apiKey, params) {
     if (params.aspect_ratio) payload.aspect_ratio = params.aspect_ratio;
     if (params.resolution) payload.resolution = params.resolution;
     if (params.quality) payload.quality = params.quality;
+    if (modelInfo?.inputs?.name) {
+        payload.name = params.name || modelInfo.inputs.name.default;
+    }
     return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 60);
 }
 
@@ -107,11 +123,18 @@ export async function generateI2V(apiKey, params) {
         if (imageField === 'images_list') payload.images_list = [params.image_url];
         else payload[imageField] = params.image_url;
     }
+    const lastImageField = modelInfo?.lastImageField;
+    if (lastImageField && params.last_image) {
+        payload[lastImageField] = params.last_image;
+    }
     if (params.aspect_ratio) payload.aspect_ratio = params.aspect_ratio;
     if (params.duration) payload.duration = params.duration;
     if (params.resolution) payload.resolution = params.resolution;
     if (params.quality) payload.quality = params.quality;
     if (params.mode) payload.mode = params.mode;
+    if (modelInfo?.inputs?.name) {
+        payload.name = params.name || modelInfo.inputs.name.default;
+    }
     return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
 }
 
@@ -127,6 +150,20 @@ export async function generateMarketingStudioAd(apiKey, params) {
     return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
 }
 
+export async function processV2V(apiKey, params) {
+    const modelInfo = getV2VModelById(params.model);
+    const endpoint = modelInfo?.endpoint || params.model;
+    const videoField = modelInfo?.videoField || 'video_url';
+    const payload = { [videoField]: params.video_url };
+    if (modelInfo?.imageField && params.image_url) {
+        payload[modelInfo.imageField] = params.image_url;
+    }
+    if (modelInfo?.hasPrompt && params.prompt) {
+        payload.prompt = params.prompt;
+    }
+    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+}
+
 export async function processLipSync(apiKey, params) {
     const modelInfo = getLipSyncModelById(params.model);
     const endpoint = modelInfo?.endpoint || params.model;
@@ -137,6 +174,20 @@ export async function processLipSync(apiKey, params) {
     if (modelInfo?.hasPrompt) payload.prompt = params.prompt || '';
     if (params.resolution) payload.resolution = params.resolution;
     if (params.seed !== undefined && params.seed !== -1) payload.seed = params.seed;
+    return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
+}
+
+export async function generateAudio(apiKey, params) {
+    const modelId = params._modelId || params.model;
+    const modelInfo = getAudioModelById(modelId);
+    const endpoint = modelInfo?.endpoint || modelId;
+    const payload = {};
+    const skipKeys = ['_modelId', 'onRequestId'];
+    for (const key in params) {
+        if (!skipKeys.includes(key) && params[key] !== undefined && params[key] !== null) {
+            payload[key] = params[key];
+        }
+    }
     return submitAndPoll(endpoint, payload, apiKey, params.onRequestId, 900);
 }
 
@@ -180,6 +231,7 @@ export function uploadFile(apiKey, file, onProgress) {
                 } catch (e) {
                     // fallback to statusText
                 }
+                notifyAuthRequired(xhr.status, detail);
                 reject(new Error(`File upload failed: ${xhr.status} - ${detail}`));
             }
         };
@@ -198,6 +250,7 @@ export async function getUserBalance(apiKey) {
     });
     if (!response.ok) {
         const errText = await response.text();
+        notifyAuthRequired(response.status, errText);
         throw new Error(`Failed to fetch balance: ${response.status} - ${errText.slice(0, 100)}`);
     }
     return await response.json();
@@ -614,4 +667,33 @@ export async function getAppInterests(apiKey) {
         throw new Error(`Failed to fetch interests: ${response.status} - ${errText.slice(0, 100)}`);
     }
     return await response.json();
+}
+
+export async function runClipping(apiKey, params) {
+    const payload = {
+        video_url: params.video_url,
+        num_highlights: params.num_highlights || 3,
+        aspect_ratio: params.aspect_ratio || "9:16",
+        return_coordinates_only: !!params.return_coordinates_only
+    };
+    return submitAndPoll("ai-clipping", payload, apiKey, params.onRequestId, 900);
+}
+
+export async function runMotionGraphics(apiKey, params) {
+    const payload = {
+        prompt: params.prompt,
+        aspect_ratio: params.aspect_ratio || "16:9",
+        duration_seconds: params.duration_seconds || 6,
+    };
+    return submitAndPoll("motion-graphics", payload, apiKey, params.onRequestId, 900);
+}
+
+export async function runMotionGraphicsEdit(apiKey, params) {
+    const payload = {
+        request_id: params.request_id,
+        edit_prompt: params.edit_prompt,
+        aspect_ratio: params.aspect_ratio || "16:9",
+        duration_seconds: params.duration_seconds || 6,
+    };
+    return submitAndPoll("motion-graphics-edit", payload, apiKey, params.onRequestId, 900);
 }

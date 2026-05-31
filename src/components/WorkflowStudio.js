@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n.js';
+
 export function WorkflowStudio() {
     const container = document.createElement('div');
     container.className = 'w-full h-full flex flex-col items-center justify-center bg-app-bg text-white gap-4';
@@ -10,11 +12,11 @@ export function WorkflowStudio() {
     </svg>`;
 
     const title = document.createElement('p');
-    title.textContent = 'Workflow Studio';
+    title.textContent = t('workflows.title');
     title.className = 'text-lg font-bold opacity-60';
 
     const sub = document.createElement('p');
-    sub.textContent = 'Available in the web app at open-generative-ai.com';
+    sub.textContent = t('workflows.webOnly');
     sub.className = 'text-sm opacity-40';
 
     container.appendChild(icon);

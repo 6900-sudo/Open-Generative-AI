@@ -15,14 +15,14 @@ const SCROLLBAR_STYLE = `
     border-radius: 10px;
   }
   .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: rgba(217, 255, 0, 0.3);
+    background: rgba(34, 211, 238, 0.3);
   }
 `;
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
 const CheckSvg = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d9ff00" strokeWidth="4">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="4">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
@@ -412,7 +412,7 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
                 <div className="absolute inset-0 bg-primary/10 blur-[120px] rounded-full opacity-30 group-hover:opacity-60 transition-opacity duration-1000" />
                 <div className="relative w-24 h-24 md:w-32 md:h-32 bg-white/[0.02] rounded-[2rem] flex items-center justify-center border border-white/[0.05] overflow-hidden backdrop-blur-sm">
                   <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10 relative z-10 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d9ff00" strokeWidth="1.5">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="1.5">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                       <line x1="8" y1="21" x2="16" y2="21" />
                       <line x1="12" y1="17" x2="12" y2="21" />
@@ -582,13 +582,7 @@ export default function MarketingStudio({ apiKey, droppedFiles, onFilesHandled }
                   Generating...
                 </>
               ) : (
-                <>
-                  <span>Launch</span>
-                  <div className="flex items-center gap-1 border-l border-black/10 pl-3">
-                    <span className="text-[10px] opacity-70">{params.res === '1080p' ? params.duration * 0.675 : params.duration * 0.3}</span>
-                    <span className="text-[8px] font-black opacity-40">$</span>
-                  </div>
-                </>
+                <span>Launch</span>
               )}
             </button>
           </div>

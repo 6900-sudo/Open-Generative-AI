@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n.js';
+
 export function AgentStudio() {
     const container = document.createElement('div');
     container.className = 'w-full h-full flex flex-col items-center justify-center bg-app-bg text-white gap-4';
@@ -10,11 +12,11 @@ export function AgentStudio() {
     </svg>`;
 
     const title = document.createElement('p');
-    title.textContent = 'Agent Studio';
+    title.textContent = t('agents.title');
     title.className = 'text-lg font-bold opacity-60';
 
     const sub = document.createElement('p');
-    sub.textContent = 'Available in the web app at open-generative-ai.com';
+    sub.textContent = t('agents.webOnly');
     sub.className = 'text-sm opacity-40';
 
     container.appendChild(icon);

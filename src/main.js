@@ -32,6 +32,10 @@ function navigate(page) {
     import('./components/AgentStudio.js').then(({ AgentStudio }) => {
       contentArea.appendChild(AgentStudio());
     });
+  } else if (page === 'mcp-cli') {
+    import('./components/McpCliStudio.js').then(({ McpCliStudio }) => {
+      contentArea.appendChild(McpCliStudio());
+    });
   }
 }
 

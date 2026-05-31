@@ -4,3 +4,6 @@
 [submodule "packages/Open-Poe-AI"]
 	path = packages/Open-Poe-AI
 	url = https://github.com/Anil-matcha/Open-Poe-AI.git
+[submodule "packages/Open-AI-Design-Agent"]
+	path = packages/Open-AI-Design-Agent
+	url = https://github.com/Anil-matcha/Open-AI-Design-Agent

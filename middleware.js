@@ -9,10 +9,12 @@ export function middleware(request) {
                     url.pathname.startsWith('/api/v1');
 
     if (isMuApi) {
-        // Remap /api/v1 ONLY if it's not handled by a specific route.
-        // Actually, we'll let existing remapping for /api/v1 stay if needed,
-        // but we'll remove app/workflow as they need special handling.
-        if (url.pathname.startsWith('/api/v1')) {
+        // Exclude paths that have their own dedicated route handlers with custom logic
+        const isHandledByRoute = url.pathname.startsWith('/api/v1/creative-agent') || 
+                                url.pathname.startsWith('/api/v1/get_upload_url') ||
+                                url.pathname.startsWith('/api/v1/upload-binary');
+
+        if (url.pathname.startsWith('/api/v1') && !isHandledByRoute) {
             const targetUrl = new URL(url.pathname + url.search, 'https://api.muapi.ai');
             return NextResponse.rewrite(targetUrl);
         }

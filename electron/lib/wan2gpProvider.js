@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const { withWan2gpAvailability } = require('./wan2gpModelAvailability');
 
 const DATA_DIR = path.join(app.getPath('userData'), 'local-ai');
 const CONFIG_FILE = path.join(DATA_DIR, 'wan2gp.json');
@@ -274,18 +275,7 @@ async function listModels() {
     const base = normalizeUrl(url);
     const probeRes = await probe(url); // populates fnResolutionCache
     const cached = fnResolutionCache.get(base);
-    return WAN2GP_CATALOG.map(m => {
-        if (!probeRes.ok) return { ...m, ready: false, unavailableReason: probeRes.error };
-        const realFn = cached?.resolved.get(m.id) || null;
-        if (!realFn) {
-            return {
-                ...m,
-                ready: false,
-                unavailableReason: `Wan2GP server has no api_name matching "${m.fn}". Check Wan2GP version or load this model in its UI.`,
-            };
-        }
-        return { ...m, ready: true, fn: realFn };
-    });
+    return WAN2GP_CATALOG.map(m => withWan2gpAvailability(m, probeRes, cached));
 }
 
 // ─── Generate ─────────────────────────────────────────────────────────────────

@@ -4,11 +4,11 @@ This document serves as a comprehensive knowledge base for the Open Generative A
 
 ## 1. Project Vision & Overview
 
-**Open Generative AI** is an ambitious open-source project dedicated to **replicating the full functionality of the Higgsfield platform**.
+**Open Generative AI** is an ambitious open-source project for AI image and video generation.
 
-- **Core Goal:** To build a feature-complete, self-hosted alternative to Higgsfield, starting with **Image Generation** (Nano) and expanding into **Video Generation** (Cinema) and other creative tools.
+- **Core Goal:** To build a feature-complete, self-hosted generative AI studio, starting with **Image Generation** (Nano) and expanding into **Video Generation** (Cinema) and other creative tools.
 - **Current State:** The Image Studio ("Nano Banana Pro" interface) is fully operational, featuring a premium dark-mode UI, history management, and multi-model support via the [Muapi.ai](https://muapi.ai) engine.
-- **Future Direction:** The architecture is designed to scale for video generation, model training interfaces, and advanced editing tools, mirroring the evolving capabilities of Higgsfield.
+- **Future Direction:** The architecture is designed to scale for video generation, model training interfaces, and advanced editing tools.
 
 - **Stack:** Vite, Vanilla JavaScript, Tailwind CSS v4.
 - **Repository:** `https://github.com/Anil-matcha/Open-Generative-AI`
@@ -73,7 +73,7 @@ Contains the `t2iModels` array.
 ## 4. UI & Styling (Tailwind v4)
 
 - **Theme:** Dark mode by default (`bg-app-bg` = `#050505`).
-- **Accent:** Neon Yellow-Green (`#d9ff00`) used for primary actions and glows.
+- **Accent:** Electric Cyan (`#22d3ee`) used for primary actions and glows.
 - **Glassmorphism:** Extensive use of `backdrop-blur` and `bg-white/5` or `bg-black/60` for panels, headers, and modals.
 - **Responsiveness:**
     - **Mobile:** Stacked layout, simplified controls, hidden sidebar.

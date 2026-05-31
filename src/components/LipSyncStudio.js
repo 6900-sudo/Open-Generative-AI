@@ -1,6 +1,7 @@
 import { muapi } from '../lib/muapi.js';
 import { lipsyncModels, imageLipSyncModels, videoLipSyncModels, getLipSyncModelById, getResolutionsForLipSyncModel } from '../lib/models.js';
 import { AuthModal } from './AuthModal.js';
+import { t } from '../lib/i18n.js';
 import { createUploadPicker } from './UploadPicker.js';
 import { savePendingJob, removePendingJob, getPendingJobs } from '../lib/pendingJobs.js';
 
@@ -48,8 +49,8 @@ export function LipSyncStudio() {
                 <div class="absolute top-4 right-4 text-primary animate-pulse">🎙</div>
             </div>
         </div>
-        <h1 class="text-2xl sm:text-4xl md:text-7xl font-black text-white tracking-widest uppercase mb-4 selection:bg-primary selection:text-black text-center px-4">Lip Sync</h1>
-        <p class="text-secondary text-sm font-medium tracking-wide opacity-60">Animate portraits or sync lips to audio with AI</p>
+        <h1 class="text-2xl sm:text-4xl md:text-7xl font-black text-white tracking-widest uppercase mb-4 selection:bg-primary selection:text-black text-center px-4">${t('lipsync.title')}</h1>
+        <p class="text-secondary text-sm font-medium tracking-wide opacity-60">${t('lipsync.subtitle')}</p>
     `;
     container.appendChild(hero);
 
@@ -69,17 +70,17 @@ export function LipSyncStudio() {
 
     const modeLabel = document.createElement('span');
     modeLabel.className = 'text-xs text-muted font-bold uppercase tracking-widest mr-2';
-    modeLabel.textContent = 'Input:';
+    modeLabel.textContent = t('lipsync.input');
 
     const imageModeBtn = document.createElement('button');
     imageModeBtn.type = 'button';
     imageModeBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all border border-primary bg-primary/10 text-primary';
-    imageModeBtn.textContent = '🖼 Portrait Image';
+    imageModeBtn.textContent = t('lipsync.portraitImage');
 
     const videoModeBtn = document.createElement('button');
     videoModeBtn.type = 'button';
     videoModeBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/10 text-muted hover:border-white/30 hover:text-white';
-    videoModeBtn.textContent = '🎬 Video';
+    videoModeBtn.textContent = t('lipsync.video');
 
     modeToggleRow.appendChild(modeLabel);
     modeToggleRow.appendChild(imageModeBtn);
@@ -95,12 +96,12 @@ export function LipSyncStudio() {
         anchorContainer: container,
         onSelect: ({ url }) => {
             uploadedImageUrl = url;
-            imageStatusLabel.textContent = '✓ Image ready';
+            imageStatusLabel.textContent = t('lipsync.imageReady');
             imageStatusLabel.className = 'text-primary';
         },
         onClear: () => {
             uploadedImageUrl = null;
-            imageStatusLabel.textContent = 'No image';
+            imageStatusLabel.textContent = t('lipsync.noImage');
             imageStatusLabel.className = 'text-muted';
         }
     });
@@ -144,7 +145,7 @@ export function LipSyncStudio() {
         videoReadyEl.classList.add('hidden'); videoReadyEl.classList.remove('flex');
         videoPickerBtn.classList.remove('border-primary/60'); videoPickerBtn.classList.add('border-white/10');
         videoPickerBtn.title = 'Upload source video';
-        mediaStatusLabel.textContent = 'No video'; mediaStatusLabel.className = 'text-muted';
+        mediaStatusLabel.textContent = t('lipsync.noVideo'); mediaStatusLabel.className = 'text-muted';
     };
     const showVideoSpinner = () => {
         videoIconEl.classList.add('hidden'); videoIconEl.classList.remove('flex');
@@ -212,7 +213,7 @@ export function LipSyncStudio() {
         audioReadyEl.classList.add('hidden'); audioReadyEl.classList.remove('flex');
         audioPickerBtn.classList.remove('border-primary/60'); audioPickerBtn.classList.add('border-white/10');
         audioPickerBtn.title = 'Upload audio file';
-        audioStatusLabel.textContent = 'No audio'; audioStatusLabel.className = 'text-muted';
+        audioStatusLabel.textContent = t('lipsync.noAudio'); audioStatusLabel.className = 'text-muted';
     };
     const showAudioSpinner = () => {
         audioIconEl.classList.add('hidden'); audioIconEl.classList.remove('flex');
@@ -248,7 +249,7 @@ export function LipSyncStudio() {
 
     // ── Prompt Textarea ──
     const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Optional: describe the talking style or motion...';
+    textarea.placeholder = t('lipsync.promptPlaceholder');
     textarea.className = 'flex-1 bg-transparent text-white placeholder-muted/50 text-sm resize-none outline-none min-h-[56px] leading-relaxed pt-1';
     textarea.rows = 2;
 
@@ -265,13 +266,13 @@ export function LipSyncStudio() {
     // mediaStatusLabel: shows image or video status depending on mode
     const mediaStatusLabel = document.createElement('span');
     mediaStatusLabel.className = 'text-muted';
-    mediaStatusLabel.textContent = 'No image';
+    mediaStatusLabel.textContent = t('lipsync.noImage');
 
     const imageStatusLabel = mediaStatusLabel; // alias used in imagePicker callbacks
 
     const audioStatusLabel = document.createElement('span');
     audioStatusLabel.className = 'text-muted';
-    audioStatusLabel.textContent = 'No audio';
+    audioStatusLabel.textContent = t('lipsync.noAudio');
 
     statusRow.appendChild(mediaStatusLabel);
     statusRow.appendChild(document.createTextNode(' · '));
@@ -301,7 +302,7 @@ export function LipSyncStudio() {
     generateBtn.id = 'ls-generate-btn';
     generateBtn.type = 'button';
     generateBtn.className = 'ml-auto px-6 py-2.5 bg-primary text-black font-black text-sm rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-glow disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100';
-    generateBtn.textContent = 'Generate ✨';
+    generateBtn.textContent = t('common.generate');
 
     bottomRow.appendChild(modelBtn);
     bottomRow.appendChild(resolutionBtn);
@@ -407,14 +408,14 @@ export function LipSyncStudio() {
             videoModeBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/10 text-muted hover:border-white/30 hover:text-white';
             imagePicker.trigger.classList.remove('hidden');
             videoPickerBtn.classList.add('hidden');
-            mediaStatusLabel.textContent = uploadedImageUrl ? '✓ Image ready' : 'No image';
+            mediaStatusLabel.textContent = uploadedImageUrl ? t('lipsync.imageReady') : t('lipsync.noImage');
             mediaStatusLabel.className = uploadedImageUrl ? 'text-primary' : 'text-muted';
         } else {
             videoModeBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all border border-primary bg-primary/10 text-primary';
             imageModeBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/10 text-muted hover:border-white/30 hover:text-white';
             videoPickerBtn.classList.remove('hidden');
             imagePicker.trigger.classList.add('hidden');
-            mediaStatusLabel.textContent = uploadedVideoUrl ? '✓ Video ready' : 'No video';
+            mediaStatusLabel.textContent = uploadedVideoUrl ? t('lipsync.videoReady') : t('lipsync.noVideo');
             mediaStatusLabel.className = uploadedVideoUrl ? 'text-primary' : 'text-muted';
         }
 
@@ -469,7 +470,7 @@ export function LipSyncStudio() {
 
     const historyLabel = document.createElement('div');
     historyLabel.className = 'text-[9px] font-bold text-muted uppercase tracking-widest mb-2';
-    historyLabel.textContent = 'History';
+    historyLabel.textContent = t('lipsync.history');
     historySidebar.appendChild(historyLabel);
 
     const historyList = document.createElement('div');
@@ -498,15 +499,15 @@ export function LipSyncStudio() {
 
     const regenerateBtn = document.createElement('button');
     regenerateBtn.className = 'bg-white/10 hover:bg-white/20 px-6 py-2.5 rounded-2xl text-xs font-bold transition-all border border-white/5 backdrop-blur-lg text-white';
-    regenerateBtn.textContent = '↻ Regenerate';
+    regenerateBtn.textContent = t('lipsync.regenerate');
 
     const downloadBtn = document.createElement('button');
     downloadBtn.className = 'bg-primary text-black px-6 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-glow active:scale-95';
-    downloadBtn.textContent = '↓ Download';
+    downloadBtn.textContent = t('lipsync.download');
 
     const newBtn = document.createElement('button');
     newBtn.className = 'bg-white/10 hover:bg-white/20 px-6 py-2.5 rounded-2xl text-xs font-bold transition-all border border-white/5 backdrop-blur-lg text-white';
-    newBtn.textContent = '+ New';
+    newBtn.textContent = t('lipsync.new');
 
     canvasControls.appendChild(regenerateBtn);
     canvasControls.appendChild(downloadBtn);
@@ -639,9 +640,9 @@ export function LipSyncStudio() {
         uploadedAudioUrl = null;
         showVideoIcon();
         showAudioIcon();
-        mediaStatusLabel.textContent = inputMode === 'image' ? 'No image' : 'No video';
+        mediaStatusLabel.textContent = inputMode === 'image' ? t('lipsync.noImage') : t('lipsync.noVideo');
         mediaStatusLabel.className = 'text-muted';
-        audioStatusLabel.textContent = 'No audio';
+        audioStatusLabel.textContent = t('lipsync.noAudio');
         audioStatusLabel.className = 'text-muted';
         textarea.focus();
     };
@@ -655,15 +656,15 @@ export function LipSyncStudio() {
 
         // Validation
         if (!uploadedAudioUrl) {
-            alert('Please upload an audio file first.');
+            alert(t('lipsync.noAudioAlert'));
             return;
         }
         if (inputMode === 'image' && !uploadedImageUrl) {
-            alert('Please upload a portrait image first.');
+            alert(t('lipsync.noImageAlert'));
             return;
         }
         if (inputMode === 'video' && !uploadedVideoUrl) {
-            alert('Please upload a source video first.');
+            alert(t('lipsync.noVideoAlert'));
             return;
         }
 
@@ -672,7 +673,7 @@ export function LipSyncStudio() {
 
         hero.classList.add('opacity-0', 'scale-95', '-translate-y-10', 'pointer-events-none');
         generateBtn.disabled = true;
-        generateBtn.innerHTML = `<span class="animate-spin inline-block mr-2 text-black">◌</span> Generating...`;
+        generateBtn.innerHTML = `<span class="animate-spin inline-block mr-2 text-black">◌</span> ${t('common.generating')}`;
 
         let hadError = false;
         let capturedRequestId = null;
@@ -720,10 +721,10 @@ export function LipSyncStudio() {
             console.error(e);
             hero.classList.remove('opacity-0', 'scale-95', '-translate-y-10', 'pointer-events-none');
             generateBtn.innerHTML = `Error: ${e.message.slice(0, 60)}`;
-            setTimeout(() => { generateBtn.innerHTML = `Generate ✨`; }, 4000);
+            setTimeout(() => { generateBtn.innerHTML = t('common.generate'); }, 4000);
         } finally {
             generateBtn.disabled = false;
-            if (!hadError) generateBtn.innerHTML = `Generate ✨`;
+            if (!hadError) generateBtn.innerHTML = t('common.generate');
         }
     };
 

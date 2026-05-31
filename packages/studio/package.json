@@ -25,7 +25,8 @@
     "reactflow": "^11.11.4",
     "remark-gfm": "^4.0.1",
     "workflow-builder": "file:../Vibe-Workflow/packages/workflow-builder",
-    "ai-agent": "file:../Open-Poe-AI/packages/agents"
+    "ai-agent": "file:../Open-Poe-AI/packages/agents",
+    "design-agent": "file:../Open-AI-Design-Agent/packages/design-agent"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

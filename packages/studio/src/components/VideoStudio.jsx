@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { generateVideo, generateI2V, uploadFile } from "../muapi.js";
+import { generateVideo, generateI2V, processV2V, uploadFile } from "../muapi.js";
 import {
   t2vModels,
   i2vModels,
@@ -12,6 +12,8 @@ import {
   getAspectRatiosForI2VModel,
   getDurationsForI2VModel,
   getResolutionsForI2VModel,
+  getEffectsForI2VModel,
+  getDefaultEffectForI2VModel,
   getModesForModel,
 } from "../models.js";
 
@@ -47,7 +49,7 @@ const CheckSvg = () => (
     height="16"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="#d9ff00"
+    stroke="#22d3ee"
     strokeWidth="4"
   >
     <polyline points="20 6 9 17 4 12" />
@@ -81,7 +83,7 @@ const VideoReadySvg = () => (
   >
     <polygon points="23 7 16 12 23 17 23 7" />
     <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-    <polyline points="7 10 10 13 15 8" stroke="#d9ff00" strokeWidth="2.5" />
+    <polyline points="7 10 10 13 15 8" stroke="#22d3ee" strokeWidth="2.5" />
   </svg>
 );
 
@@ -144,7 +146,7 @@ function ModelDropdown({ imageMode, selectedModel, onSelect, onClose }) {
           </span>
           {isV2V && (
             <span className="text-[9px] text-orange-400/70">
-              Upload a video to use
+              {m.imageField ? "Upload a video and image" : "Upload a video to use"}
             </span>
           )}
         </div>
@@ -261,6 +263,7 @@ export default function VideoStudio({
     defaultModel.inputs?.quality?.default || "",
   );
   const [selectedMode, setSelectedMode] = useState("");
+  const [selectedEffect, setSelectedEffect] = useState("");
 
   // ── upload progress ──
   const [imageProgress, setImageProgress] = useState(0);
@@ -272,10 +275,14 @@ export default function VideoStudio({
   const [showResolution, setShowResolution] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
   const [showMode, setShowMode] = useState(false);
+  const [showEffect, setShowEffect] = useState(false);
 
   // ── uploads ──
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [uploadedEndImageUrl, setUploadedEndImageUrl] = useState(null);
+  const [endImageUploading, setEndImageUploading] = useState(false);
+  const [endImageProgress, setEndImageProgress] = useState(0);
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState(null);
   const [videoUploading, setVideoUploading] = useState(false);
   const [uploadedVideoName, setUploadedVideoName] = useState(null);
@@ -306,6 +313,7 @@ export default function VideoStudio({
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
   const imageFileInputRef = useRef(null);
+  const endImageFileInputRef = useRef(null);
   const videoFileInputRef = useRef(null);
   const resultVideoRef = useRef(null);
   const hasRestored = useRef(false);
@@ -345,6 +353,15 @@ export default function VideoStudio({
     [getCurrentModels, selectedModel],
   );
 
+  const isMotionControlSelection = useCallback(
+    (modelId, isV2v) => {
+      if (!isV2v) return false;
+      const m = v2vModels.find((x) => x.id === modelId);
+      return !!m?.imageField;
+    },
+    [],
+  );
+
   // ── update controls when model/mode changes ──────────────────────────────
   const applyControlsForModel = useCallback(
     (modelId, isImageMode, isV2vMode) => {
@@ -354,6 +371,7 @@ export default function VideoStudio({
         setShowResolution(false);
         setShowQuality(false);
         setShowMode(false);
+        setShowEffect(false);
         return;
       }
 
@@ -407,6 +425,15 @@ export default function VideoStudio({
         setSelectedMode("");
         setShowMode(false);
       }
+
+      const effects = isImageMode ? getEffectsForI2VModel(modelId) : [];
+      if (effects.length > 0) {
+        setSelectedEffect(getDefaultEffectForI2VModel(modelId) || effects[0]);
+        setShowEffect(true);
+      } else {
+        setSelectedEffect("");
+        setShowEffect(false);
+      }
     },
     [],
   );
@@ -426,6 +453,7 @@ export default function VideoStudio({
         if (data.selectedResolution) setSelectedResolution(data.selectedResolution);
         if (data.selectedQuality) setSelectedQuality(data.selectedQuality);
         if (data.selectedMode) setSelectedMode(data.selectedMode);
+        if (data.selectedEffect) setSelectedEffect(data.selectedEffect);
         if (data.uploadedImageUrl) setUploadedImageUrl(data.uploadedImageUrl);
         if (data.uploadedVideoUrl) setUploadedVideoUrl(data.uploadedVideoUrl);
         if (data.uploadedVideoName) setUploadedVideoName(data.uploadedVideoName);
@@ -473,6 +501,7 @@ export default function VideoStudio({
           selectedResolution,
           selectedQuality,
           selectedMode,
+          selectedEffect,
           uploadedImageUrl,
           uploadedVideoUrl,
           uploadedVideoName,
@@ -495,6 +524,7 @@ export default function VideoStudio({
     selectedResolution,
     selectedQuality,
     selectedMode,
+    selectedEffect,
     uploadedImageUrl,
     uploadedVideoUrl,
     uploadedVideoName,
@@ -520,11 +550,15 @@ export default function VideoStudio({
       setUploadedVideoName(null);
       setV2vMode(false);
       if (!imageMode) {
-        const firstI2V = i2vModels[0];
+        const currentT2V = t2vModels.find((m) => m.id === selectedModel);
+        const sibling = currentT2V?.family
+          ? i2vModels.find((m) => m.family === currentT2V.family)
+          : null;
+        const target = sibling || i2vModels[0];
         setImageMode(true);
-        setSelectedModel(firstI2V.id);
-        setSelectedModelName(firstI2V.name);
-        applyControlsForModel(firstI2V.id, true, false);
+        setSelectedModel(target.id);
+        setSelectedModelName(target.name);
+        applyControlsForModel(target.id, true, false);
       }
       setPromptDisabled(false);
     } catch (err) {
@@ -627,19 +661,28 @@ export default function VideoStudio({
       });
       setUploadedImageUrl(url);
 
-      // Clear v2v if active
-      setUploadedVideoUrl(null);
-      setUploadedVideoName(null);
-      setV2vMode(false);
+      // Motion-control v2v: image is a second input, not a mode switch
+      if (isMotionControlSelection(selectedModel, v2vMode)) {
+        setPromptDisabled(false);
+      } else {
+        // Clear v2v if active
+        setUploadedVideoUrl(null);
+        setUploadedVideoName(null);
+        setV2vMode(false);
 
-      if (!imageMode) {
-        const firstI2V = i2vModels[0];
-        setImageMode(true);
-        setSelectedModel(firstI2V.id);
-        setSelectedModelName(firstI2V.name);
-        applyControlsForModel(firstI2V.id, true, false);
+        if (!imageMode) {
+          const currentT2V = t2vModels.find((m) => m.id === selectedModel);
+          const sibling = currentT2V?.family
+            ? i2vModels.find((m) => m.family === currentT2V.family)
+            : null;
+          const target = sibling || i2vModels[0];
+          setImageMode(true);
+          setSelectedModel(target.id);
+          setSelectedModelName(target.name);
+          applyControlsForModel(target.id, true, false);
+        }
+        setPromptDisabled(false);
       }
-      setPromptDisabled(false);
     } catch (err) {
       console.error("[VideoStudio] Image upload failed:", err);
       alert(`Image upload failed: ${err.message}`);
@@ -652,6 +695,9 @@ export default function VideoStudio({
 
   const clearImageUpload = () => {
     setUploadedImageUrl(null);
+    setUploadedEndImageUrl(null);
+    // Motion-control v2v: keep model and video; just drop the image
+    if (isMotionControlSelection(selectedModel, v2vMode)) return;
     setImageMode(false);
     const first = t2vModels[0];
     setSelectedModel(first.id);
@@ -659,6 +705,32 @@ export default function VideoStudio({
     applyControlsForModel(first.id, false, false);
     setPromptDisabled(false);
   };
+
+  // ── end-frame upload (FLF i2v models) ──────────────────────────────────────
+  const handleEndImageFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image exceeds 10MB limit.");
+      return;
+    }
+    setEndImageUploading(true);
+    setEndImageProgress(0);
+    try {
+      const url = await uploadFile(apiKey, file, (pct) => {
+        setEndImageProgress(pct);
+      });
+      setUploadedEndImageUrl(url);
+    } catch (err) {
+      alert(`End frame upload failed: ${err.message}`);
+    } finally {
+      setEndImageUploading(false);
+      setEndImageProgress(0);
+      if (endImageFileInputRef.current) endImageFileInputRef.current.value = "";
+    }
+  };
+
+  const clearEndImage = () => setUploadedEndImageUrl(null);
 
   // ── video upload ─────────────────────────────────────────────────────────
   const handleVideoFileChange = async (e) => {
@@ -677,18 +749,23 @@ export default function VideoStudio({
       setUploadedVideoUrl(url);
       setUploadedVideoName(file.name);
 
-      // Clear image mode if active
-      if (imageMode) {
-        setUploadedImageUrl(null);
-        setImageMode(false);
+      if (isMotionControlSelection(selectedModel, v2vMode)) {
+        // Already in motion-control mode — keep model and image, allow prompt
+        setPromptDisabled(false);
+      } else {
+        // Default v2v flow (e.g. watermark remover) — auto-pick the first v2v model
+        if (imageMode) {
+          setUploadedImageUrl(null);
+          setImageMode(false);
+        }
+        setV2vMode(true);
+        const firstV2V = v2vModels[0];
+        setSelectedModel(firstV2V.id);
+        setSelectedModelName(firstV2V.name);
+        applyControlsForModel(firstV2V.id, false, true);
+        setPrompt("");
+        setPromptDisabled(true);
       }
-      setV2vMode(true);
-      const firstV2V = v2vModels[0];
-      setSelectedModel(firstV2V.id);
-      setSelectedModelName(firstV2V.name);
-      applyControlsForModel(firstV2V.id, false, true);
-      setPrompt("");
-      setPromptDisabled(true);
     } catch (err) {
       console.error("[VideoStudio] Video upload failed:", err);
       alert(`Video upload failed: ${err.message}`);
@@ -716,13 +793,22 @@ export default function VideoStudio({
       if (isV2V) {
         setV2vMode(true);
         setImageMode(false);
-        setUploadedImageUrl(null);
-        setUploadedImagePreview(null);
+        const isMC = !!m.imageField;
+        if (!isMC) {
+          // Single-input v2v (watermark remover etc.) — drop any image
+          setUploadedImageUrl(null);
+          setUploadedImagePreview(null);
+        }
         setSelectedModel(m.id);
         setSelectedModelName(m.name);
         applyControlsForModel(m.id, false, true);
-        setPrompt("");
-        setPromptDisabled(true);
+        if (isMC) {
+          // Motion-control: prompt is editable, video+image are needed
+          setPromptDisabled(false);
+        } else {
+          setPrompt("");
+          setPromptDisabled(true);
+        }
       } else {
         if (v2vMode) {
           setV2vMode(false);
@@ -762,6 +848,14 @@ export default function VideoStudio({
         alert("Please upload a video first.");
         return;
       }
+      if (currentModel?.imageField && !uploadedImageUrl) {
+        alert("Please upload a reference image for motion control.");
+        return;
+      }
+      if (currentModel?.promptRequired && !trimmedPrompt) {
+        alert("Please describe the motion you want.");
+        return;
+      }
     } else if (isExtendMode) {
       if (!lastGenerationId) {
         alert(
@@ -790,11 +884,19 @@ export default function VideoStudio({
       let res;
 
       if (v2vMode) {
-        // V2V: use generateVideo with video_url (the v2v models use the video endpoint)
-        res = await generateVideo(apiKey, {
+        // V2V: dedicated processV2V handles single-input tools (e.g. watermark
+        // remover) and motion-control models (which take video + image + prompt)
+        const v2vParams = {
           model: selectedModel,
           video_url: uploadedVideoUrl,
-        });
+        };
+        if (currentModel?.imageField && uploadedImageUrl) {
+          v2vParams.image_url = uploadedImageUrl;
+        }
+        if (currentModel?.hasPrompt && trimmedPrompt) {
+          v2vParams.prompt = trimmedPrompt;
+        }
+        res = await processV2V(apiKey, v2vParams);
         if (!res?.url) throw new Error("No video URL returned by API");
 
         const genId = res.id || Date.now().toString();
@@ -803,7 +905,7 @@ export default function VideoStudio({
         const entry = {
           id: genId,
           url: res.url,
-          prompt: "",
+          prompt: currentModel?.hasPrompt ? trimmedPrompt : "",
           model: selectedModel,
           timestamp: new Date().toISOString(),
         };
@@ -813,19 +915,24 @@ export default function VideoStudio({
           onGenerationComplete({
             url: res.url,
             model: selectedModel,
-            prompt: "",
+            prompt: currentModel?.hasPrompt ? trimmedPrompt : "",
             type: "video",
           });
       } else if (imageMode) {
         const i2vParams = { model: selectedModel, image_url: uploadedImageUrl };
         if (trimmedPrompt) i2vParams.prompt = trimmedPrompt;
         i2vParams.aspect_ratio = selectedAr;
+        const i2vModel = i2vModels.find((m) => m.id === selectedModel);
+        if (uploadedEndImageUrl && i2vModel?.lastImageField) {
+          i2vParams.last_image = uploadedEndImageUrl;
+        }
         const durations = getDurationsForI2VModel(selectedModel);
         if (durations.length > 0) i2vParams.duration = selectedDuration;
         const resolutions = getResolutionsForI2VModel(selectedModel);
         if (resolutions.length > 0) i2vParams.resolution = selectedResolution;
         if (selectedQuality) i2vParams.quality = selectedQuality;
         if (selectedMode) i2vParams.mode = selectedMode;
+        if (showEffect && selectedEffect) i2vParams.name = selectedEffect;
 
         res = await generateI2V(apiKey, i2vParams);
         if (!res?.url) throw new Error("No video URL returned by API");
@@ -926,6 +1033,8 @@ export default function VideoStudio({
     selectedResolution,
     selectedQuality,
     selectedMode,
+    selectedEffect,
+    showEffect,
     uploadedImageUrl,
     uploadedVideoUrl,
     lastGenerationId,
@@ -978,7 +1087,11 @@ export default function VideoStudio({
   const isExtendMode = currentModelObj?.requiresRequestId;
 
   const promptPlaceholder = v2vMode
-    ? "Video ready — click Generate to remove watermark"
+    ? currentModelObj?.imageField
+      ? currentModelObj?.promptRequired
+        ? "Describe the motion"
+        : "Describe the motion (optional)"
+      : "Video ready — click Generate to remove watermark"
     : imageMode
       ? "Describe the motion or effect (optional)"
       : isExtendMode
@@ -1209,6 +1322,70 @@ export default function VideoStudio({
               </button>
             </div>
 
+            {/* End-frame upload button (FLF i2v models only) */}
+            {imageMode && i2vModels.find((m) => m.id === selectedModel)?.lastImageField && (
+              <div className="relative">
+                <input
+                  ref={endImageFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleEndImageFileChange}
+                />
+                <button
+                  type="button"
+                  title={uploadedEndImageUrl ? "Clear end frame" : "Upload end frame (optional)"}
+                  onClick={() =>
+                    uploadedEndImageUrl
+                      ? clearEndImage()
+                      : endImageFileInputRef.current?.click()
+                  }
+                  className={`w-10 h-10 shrink-0 rounded-full border transition-all flex items-center justify-center relative overflow-hidden ${uploadedEndImageUrl ? "border-primary/60 bg-primary/5" : "bg-white/5 border-white/[0.03] hover:bg-white/10 hover:border-primary/40"} group`}
+                >
+                  {endImageUploading ? (
+                    <div className="flex flex-col items-center justify-center w-full h-full absolute inset-0 bg-black/80 z-20 backdrop-blur-[2px]">
+                      <svg className="w-8 h-8 -rotate-90">
+                        <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-white/10" />
+                        <circle
+                          cx="16"
+                          cy="16"
+                          r="14"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="transparent"
+                          strokeDasharray={88}
+                          strokeDashoffset={88 - (88 * endImageProgress) / 100}
+                          className="text-primary transition-all duration-300"
+                        />
+                      </svg>
+                      <span className="absolute text-[9px] font-black text-primary leading-none">
+                        {endImageProgress}%
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {uploadedEndImageUrl ? (
+                    <img
+                      src={uploadedEndImageUrl}
+                      alt=""
+                      className={`w-full h-full object-cover rounded-full ${endImageUploading ? "opacity-40 blur-[2px]" : "opacity-100"}`}
+                    />
+                  ) : (
+                    !endImageUploading && (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40 group-hover:text-primary transition-colors">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    )
+                  )}
+                  <span className="absolute top-0.5 left-0.5 px-1 h-3.5 bg-black/60 rounded-md text-[7px] font-black text-primary leading-none flex items-center justify-center pointer-events-none">
+                    END
+                  </span>
+                </button>
+              </div>
+            )}
+
             {/* Video upload button */}
             <div className="relative">
               <input
@@ -1313,12 +1490,12 @@ export default function VideoStudio({
                   onClick={toggleDropdown("model")}
                   className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-md transition-all border border-white/[0.03] group whitespace-nowrap"
                 >
-                  <div className="w-4 h-4 bg-[#d9ff00] rounded flex items-center justify-center shadow-lg shadow-[#d9ff00]/10">
+                  <div className="w-4 h-4 bg-[#22d3ee] rounded flex items-center justify-center shadow-lg shadow-[#22d3ee]/10">
                     <span className="text-[9px] font-bold text-black uppercase">
                       V
                     </span>
                   </div>
-                  <span className="text-xs font-semibold text-white/70 group-hover:text-[#d9ff00] transition-colors">
+                  <span className="text-xs font-semibold text-white/70 group-hover:text-[#22d3ee] transition-colors">
                     {selectedModelName}
                   </span>
                   <svg
@@ -1375,7 +1552,7 @@ export default function VideoStudio({
                         ry="2"
                       />
                     </svg>
-                    <span className="text-[11px] font-semibold text-white/70 group-hover:text-[#d9ff00] transition-colors">
+                    <span className="text-[11px] font-semibold text-white/70 group-hover:text-[#22d3ee] transition-colors">
                       {selectedAr}
                     </span>
                   </button>
@@ -1411,6 +1588,61 @@ export default function VideoStudio({
                 </div>
               )}
 
+              {/* Effect btn */}
+              {showEffect && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={toggleDropdown("effect")}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] hover:bg-white/[0.06] rounded-md transition-all border border-white/[0.03] group whitespace-nowrap"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="opacity-40 text-white"
+                    >
+                      <path d="M5 3l14 9-14 9V3z" />
+                    </svg>
+                    <span className="text-[11px] font-semibold text-white/70 group-hover:text-[#22d3ee] transition-colors max-w-[140px] truncate">
+                      {selectedEffect || "Effect"}
+                    </span>
+                  </button>
+                  {openDropdown === "effect" && (
+                    <div
+                      ref={dropdownRef}
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute bottom-[calc(100%+12px)] left-0 z-50 bg-[#0a0a0a] rounded-lg p-3 shadow-2xl border border-white/[0.05] max-h-80 overflow-y-auto custom-scrollbar min-w-[200px]"
+                    >
+                      <div className="text-xs font-bold text-white/20 border-b border-white/[0.03] mb-2">
+                        Effect Type
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {getEffectsForI2VModel(selectedModel).map((eff) => (
+                          <div
+                            key={eff}
+                            className="flex items-center justify-between p-2 hover:bg-white/5 rounded cursor-pointer transition-all group/opt"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEffect(eff);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <span className="text-[11px] font-semibold text-white/70 group-hover/opt:text-white">
+                              {eff}
+                            </span>
+                            {selectedEffect === eff && <CheckSvg />}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Duration btn */}
               {showDuration && (
                 <div className="relative">
@@ -1431,7 +1663,7 @@ export default function VideoStudio({
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span className="text-xs font-semibold text-white/70 group-hover:text-[#d9ff00] transition-colors">
+                    <span className="text-xs font-semibold text-white/70 group-hover:text-[#22d3ee] transition-colors">
                       {selectedDuration}s
                     </span>
                   </button>
@@ -1486,7 +1718,7 @@ export default function VideoStudio({
                     >
                       <path d="M6 2L3 6v15a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z" />
                     </svg>
-                    <span className="text-[11px] font-semibold text-white/70 group-hover:text-[#d9ff00] transition-colors">
+                    <span className="text-[11px] font-semibold text-white/70 group-hover:text-[#22d3ee] transition-colors">
                       {selectedResolution || "720p"}
                     </span>
                   </button>
@@ -1528,7 +1760,7 @@ export default function VideoStudio({
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className="bg-[#d9ff00] text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-[#e5ff33] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg shadow-[#d9ff00]/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#22d3ee] text-black px-4 py-2 rounded-md font-medium text-sm hover:bg-[#e5ff33] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 w-full sm:w-auto shadow-lg shadow-[#22d3ee]/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {generating ? (
                 <>
