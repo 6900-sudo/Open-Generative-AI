@@ -8,14 +8,6 @@
 
 > 🤖 **Automate media generations with AI coding agents:** [Generative-Media-Skills](https://github.com/SamurAIGPT/Generative-Media-Skills) — a library of skills that let agents like **Claude Code**, **Codex**, and other coding assistants drive 200+ image/video models end-to-end (prompt → generate → edit → stitch) directly from your terminal. Perfect for building automated media pipelines without touching a UI.
 
-### Related projects
-
-> **Open-source Node based workflow builder** -> https://github.com/SamurAIGPT/Vibe-Workflow
-
-> **Open-source AI Clipping — turn any long-form YouTube video into viral-ready vertical shorts** -> https://github.com/SamurAIGPT/AI-Youtube-Shorts-Generator
-
-> **Open-source AI Design Agent** -> https://github.com/Anil-matcha/Open-AI-Design-Agent 
-
 ## Related Projects
 
 - [Generative-Media-Skills](https://github.com/SamurAIGPT/Generative-Media-Skills) — Use these models as AI agent skills in Claude Code, Cursor, and Gemini CLI
@@ -25,6 +17,7 @@
 - [Text-To-Video-AI](https://github.com/SamurAIGPT/Text-To-Video-AI) — Lightweight text-to-video script — no UI required
 - [muapi-comfyui](https://github.com/SamurAIGPT/muapi-comfyui) — ComfyUI nodes for 100+ MuAPI models
 - [n8n-nodes-muapi](https://github.com/SamurAIGPT/n8n-nodes-muapi) — n8n community nodes for MuAPI — automate media generation
+- [Open-AI-Design-Agent](https://github.com/Anil-matcha/Open-AI-Design-Agent) — Open-source autonomous AI design agent
 
 ## 🌐 Try it Online — No Install Required
 
