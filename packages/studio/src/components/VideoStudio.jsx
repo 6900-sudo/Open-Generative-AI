@@ -15,6 +15,7 @@ import {
   getEffectsForI2VModel,
   getDefaultEffectForI2VModel,
   getModesForModel,
+  getMaxImagesForI2VModel,
 } from "../models.js";
 
 // ── tiny helpers ──────────────────────────────────────────────────────────────
@@ -279,6 +280,7 @@ export default function VideoStudio({
 
   // ── uploads ──
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
   const [imageUploading, setImageUploading] = useState(false);
   const [uploadedEndImageUrl, setUploadedEndImageUrl] = useState(null);
   const [endImageUploading, setEndImageUploading] = useState(false);
@@ -455,6 +457,11 @@ export default function VideoStudio({
         if (data.selectedMode) setSelectedMode(data.selectedMode);
         if (data.selectedEffect) setSelectedEffect(data.selectedEffect);
         if (data.uploadedImageUrl) setUploadedImageUrl(data.uploadedImageUrl);
+        if (data.uploadedImageUrls) {
+          setUploadedImageUrls(data.uploadedImageUrls);
+        } else if (data.uploadedImageUrl) {
+          setUploadedImageUrls([data.uploadedImageUrl]);
+        }
         if (data.uploadedVideoUrl) setUploadedVideoUrl(data.uploadedVideoUrl);
         if (data.uploadedVideoName) setUploadedVideoName(data.uploadedVideoName);
         if (data.prompt) setPrompt(data.prompt);
@@ -503,6 +510,7 @@ export default function VideoStudio({
           selectedMode,
           selectedEffect,
           uploadedImageUrl,
+          uploadedImageUrls,
           uploadedVideoUrl,
           uploadedVideoName,
           prompt,
@@ -526,6 +534,7 @@ export default function VideoStudio({
     selectedMode,
     selectedEffect,
     uploadedImageUrl,
+    uploadedImageUrls,
     uploadedVideoUrl,
     uploadedVideoName,
     prompt,
@@ -549,16 +558,29 @@ export default function VideoStudio({
       setUploadedVideoUrl(null);
       setUploadedVideoName(null);
       setV2vMode(false);
+
+      let targetModelId = selectedModel;
       if (!imageMode) {
         const currentT2V = t2vModels.find((m) => m.id === selectedModel);
         const sibling = currentT2V?.family
           ? i2vModels.find((m) => m.family === currentT2V.family)
           : null;
         const target = sibling || i2vModels[0];
+        targetModelId = target.id;
         setImageMode(true);
         setSelectedModel(target.id);
         setSelectedModelName(target.name);
         applyControlsForModel(target.id, true, false);
+      }
+
+      const maxImgs = getMaxImagesForI2VModel(targetModelId);
+      if (maxImgs > 2) {
+        setUploadedImageUrls((prev) => {
+          if (prev.includes(url)) return prev;
+          return [...prev, url].slice(0, maxImgs);
+        });
+      } else {
+        setUploadedImageUrls([url]);
       }
       setPromptDisabled(false);
     } catch (err) {
@@ -664,22 +686,35 @@ export default function VideoStudio({
       // Motion-control v2v: image is a second input, not a mode switch
       if (isMotionControlSelection(selectedModel, v2vMode)) {
         setPromptDisabled(false);
+        setUploadedImageUrls([url]);
       } else {
         // Clear v2v if active
         setUploadedVideoUrl(null);
         setUploadedVideoName(null);
         setV2vMode(false);
 
+        let targetModelId = selectedModel;
         if (!imageMode) {
           const currentT2V = t2vModels.find((m) => m.id === selectedModel);
           const sibling = currentT2V?.family
             ? i2vModels.find((m) => m.family === currentT2V.family)
             : null;
           const target = sibling || i2vModels[0];
+          targetModelId = target.id;
           setImageMode(true);
           setSelectedModel(target.id);
           setSelectedModelName(target.name);
           applyControlsForModel(target.id, true, false);
+        }
+
+        const maxImgs = getMaxImagesForI2VModel(targetModelId);
+        if (maxImgs > 2) {
+          setUploadedImageUrls((prev) => {
+            if (prev.includes(url)) return prev;
+            return [...prev, url].slice(0, maxImgs);
+          });
+        } else {
+          setUploadedImageUrls([url]);
         }
         setPromptDisabled(false);
       }
@@ -695,6 +730,7 @@ export default function VideoStudio({
 
   const clearImageUpload = () => {
     setUploadedImageUrl(null);
+    setUploadedImageUrls([]);
     setUploadedEndImageUrl(null);
     // Motion-control v2v: keep model and video; just drop the image
     if (isMotionControlSelection(selectedModel, v2vMode)) return;
@@ -704,6 +740,24 @@ export default function VideoStudio({
     setSelectedModelName(first.name);
     applyControlsForModel(first.id, false, false);
     setPromptDisabled(false);
+  };
+
+  const removeImageAtIndex = (idx) => {
+    const nextUrls = uploadedImageUrls.filter((_, i) => i !== idx);
+    setUploadedImageUrls(nextUrls);
+    if (nextUrls.length === 0) {
+      setUploadedImageUrl(null);
+      // Reset to text-to-video if empty list
+      if (isMotionControlSelection(selectedModel, v2vMode)) return;
+      setImageMode(false);
+      const first = t2vModels[0];
+      setSelectedModel(first.id);
+      setSelectedModelName(first.name);
+      applyControlsForModel(first.id, false, false);
+      setPromptDisabled(false);
+    } else {
+      setUploadedImageUrl(nextUrls[0]);
+    }
   };
 
   // ── end-frame upload (FLF i2v models) ──────────────────────────────────────
@@ -797,7 +851,6 @@ export default function VideoStudio({
         if (!isMC) {
           // Single-input v2v (watermark remover etc.) — drop any image
           setUploadedImageUrl(null);
-          setUploadedImagePreview(null);
         }
         setSelectedModel(m.id);
         setSelectedModelName(m.name);
@@ -864,9 +917,17 @@ export default function VideoStudio({
         return;
       }
     } else if (imageMode) {
-      if (!uploadedImageUrl) {
-        alert("Please upload a start frame image first.");
-        return;
+      const maxImgs = getMaxImagesForI2VModel(selectedModel);
+      if (maxImgs > 2) {
+        if (uploadedImageUrls.length === 0) {
+          alert("Please upload at least one reference image first.");
+          return;
+        }
+      } else {
+        if (!uploadedImageUrl) {
+          alert("Please upload a start frame image first.");
+          return;
+        }
       }
     } else {
       if (!trimmedPrompt) {
@@ -919,7 +980,13 @@ export default function VideoStudio({
             type: "video",
           });
       } else if (imageMode) {
-        const i2vParams = { model: selectedModel, image_url: uploadedImageUrl };
+        const maxImgs = getMaxImagesForI2VModel(selectedModel);
+        const i2vParams = { model: selectedModel };
+        if (maxImgs > 2) {
+          i2vParams.images_list = uploadedImageUrls;
+        } else {
+          i2vParams.image_url = uploadedImageUrl;
+        }
         if (trimmedPrompt) i2vParams.prompt = trimmedPrompt;
         i2vParams.aspect_ratio = selectedAr;
         const i2vModel = i2vModels.find((m) => m.id === selectedModel);
@@ -1036,6 +1103,7 @@ export default function VideoStudio({
     selectedEffect,
     showEffect,
     uploadedImageUrl,
+    uploadedImageUrls,
     uploadedVideoUrl,
     lastGenerationId,
     getCurrentModel,
@@ -1053,7 +1121,7 @@ export default function VideoStudio({
     resetToPromptBar();
     setPrompt("");
     setUploadedImageUrl(null);
-    setUploadedImagePreview(null);
+    setUploadedImageUrls([]);
     setImageMode(false);
     setUploadedVideoUrl(null);
     setUploadedVideoName(null);
@@ -1071,7 +1139,7 @@ export default function VideoStudio({
     resetToPromptBar();
     setPrompt("");
     setUploadedImageUrl(null);
-    setUploadedImagePreview(null);
+    setUploadedImageUrls([]);
     setImageMode(false);
     setSelectedModel("seedance-v2.0-extend");
     setSelectedModelName("Seedance 2.0 Extend");
@@ -1236,91 +1304,151 @@ export default function VideoStudio({
       <div className="absolute bottom-4 w-full max-w-[95%] lg:max-w-4xl z-40 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
         <div className="w-full bg-[#0a0a0a]/80 backdrop-blur-3xl rounded-md border border-white/10 p-4 flex flex-col gap-2 shadow-2xl">
           <div className="flex items-center gap-2 px-1">
-            {/* Image upload button */}
-            <div className="relative">
-              <input
-                ref={imageFileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageFileChange}
-              />
-              <button
-                type="button"
-                title={
-                  uploadedImageUrl
-                    ? "Clear image"
-                    : "Upload image for Image-to-Video"
-                }
-                onClick={() =>
-                  uploadedImageUrl
-                    ? clearImageUpload()
-                    : imageFileInputRef.current?.click()
-                }
-                className={`w-10 h-10 shrink-0 rounded-full border transition-all flex items-center justify-center relative overflow-hidden ${uploadedImageUrl ? "border-primary/60 bg-primary/5" : "bg-white/5 border-white/[0.03] hover:bg-white/10 hover:border-primary/40"} group`}
-              >
-                {imageUploading ? (
-                  <div className="flex flex-col items-center justify-center w-full h-full absolute inset-0 bg-black/80 z-20 backdrop-blur-[2px]">
-                    <svg className="w-8 h-8 -rotate-90">
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="transparent"
-                        className="text-white/10"
-                      />
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="transparent"
-                        strokeDasharray={88}
-                        strokeDashoffset={88 - (88 * imageProgress) / 100}
-                        className="text-primary transition-all duration-300"
-                      />
-                    </svg>
-                    <span className="absolute text-[9px] font-black text-primary leading-none">
-                      {imageProgress}%
+            {/* Image upload button / thumbnails */}
+            {imageMode && getMaxImagesForI2VModel(selectedModel) > 2 ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                {uploadedImageUrls.map((url, idx) => (
+                  <div key={idx} className="relative w-10 h-10 shrink-0 rounded-full border border-primary/60 bg-primary/5 overflow-hidden group">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImageAtIndex(idx)}
+                      className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-black transition-opacity"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                    <span className="absolute bottom-0.5 right-0.5 px-1 h-3.5 bg-black/60 rounded-full text-[8px] font-black text-primary leading-none flex items-center justify-center pointer-events-none">
+                      {idx + 1}
                     </span>
                   </div>
-                ) : null}
-
-                {uploadedImageUrl ? (
-                  <img
-                    src={uploadedImageUrl}
-                    alt=""
-                    className={`w-full h-full object-cover rounded-full ${imageUploading ? "opacity-40 blur-[2px]" : "opacity-100"}`}
-                  />
-                ) : (
-                  !imageUploading && (
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-white/40 group-hover:text-primary transition-colors"
+                ))}
+                {uploadedImageUrls.length < getMaxImagesForI2VModel(selectedModel) && (
+                  <div className="relative">
+                    <input
+                      ref={imageFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageFileChange}
+                    />
+                    <button
+                      type="button"
+                      title="Upload reference image"
+                      onClick={() => imageFileInputRef.current?.click()}
+                      className="w-10 h-10 shrink-0 rounded-full border transition-all flex items-center justify-center bg-white/5 border-white/[0.03] hover:bg-white/10 hover:border-primary/40 relative overflow-hidden group"
                     >
-                      <rect
-                        x="3"
-                        y="3"
+                      {imageUploading ? (
+                        <div className="flex flex-col items-center justify-center w-full h-full absolute inset-0 bg-black/80 z-20 backdrop-blur-[2px]">
+                          <svg className="w-8 h-8 -rotate-90">
+                            <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-white/10" />
+                            <circle
+                              cx="16"
+                              cy="16"
+                              r="14"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="transparent"
+                              strokeDasharray={88}
+                              strokeDashoffset={88 - (88 * imageProgress) / 100}
+                              className="text-primary transition-all duration-300"
+                            />
+                          </svg>
+                          <span className="absolute text-[9px] font-black text-primary leading-none">{imageProgress}%</span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-bold text-white/40 group-hover:text-primary transition-colors">+</span>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  ref={imageFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageFileChange}
+                />
+                <button
+                  type="button"
+                  title={
+                    uploadedImageUrl
+                      ? "Clear image"
+                      : "Upload image for Image-to-Video"
+                  }
+                  onClick={() =>
+                    uploadedImageUrl
+                      ? clearImageUpload()
+                      : imageFileInputRef.current?.click()
+                  }
+                  className={`w-10 h-10 shrink-0 rounded-full border transition-all flex items-center justify-center relative overflow-hidden ${uploadedImageUrl ? "border-primary/60 bg-primary/5" : "bg-white/5 border-white/[0.03] hover:bg-white/10 hover:border-primary/40"} group`}
+                >
+                  {imageUploading ? (
+                    <div className="flex flex-col items-center justify-center w-full h-full absolute inset-0 bg-black/80 z-20 backdrop-blur-[2px]">
+                      <svg className="w-8 h-8 -rotate-90">
+                        <circle
+                          cx="16"
+                          cy="16"
+                          r="14"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="transparent"
+                          className="text-white/10"
+                        />
+                        <circle
+                          cx="16"
+                          cy="16"
+                          r="14"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          fill="transparent"
+                          strokeDasharray={88}
+                          strokeDashoffset={88 - (88 * imageProgress) / 100}
+                          className="text-primary transition-all duration-300"
+                        />
+                      </svg>
+                      <span className="absolute text-[9px] font-black text-primary leading-none">
+                        {imageProgress}%
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {uploadedImageUrl ? (
+                    <img
+                      src={uploadedImageUrl}
+                      alt=""
+                      className={`w-full h-full object-cover rounded-full ${imageUploading ? "opacity-40 blur-[2px]" : "opacity-100"}`}
+                    />
+                  ) : (
+                    !imageUploading && (
+                      <svg
                         width="18"
                         height="18"
-                        rx="2"
-                        ry="2"
-                      />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                  )
-                )}
-              </button>
-            </div>
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="text-white/40 group-hover:text-primary transition-colors"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    )
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* End-frame upload button (FLF i2v models only) */}
             {imageMode && i2vModels.find((m) => m.id === selectedModel)?.lastImageField && (

@@ -5621,6 +5621,7 @@ export const i2vModels = [
     "endpoint": "pixverse-v4.5-i2v",
     "family": "pixverse-v4.5",
     "imageField": "images_list",
+    "lastImageField": "images_list",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -5677,6 +5678,7 @@ export const i2vModels = [
     "endpoint": "vidu-v2.0-i2v",
     "family": "vidu-v2",
     "imageField": "images_list",
+    "lastImageField": "images_list",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -5730,6 +5732,7 @@ export const i2vModels = [
     "family": "vidu-q1",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 7,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -5999,6 +6002,7 @@ export const i2vModels = [
     "endpoint": "pixverse-v5-i2v",
     "family": "pixverse-v5",
     "imageField": "images_list",
+    "lastImageField": "images_list",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -6056,6 +6060,7 @@ export const i2vModels = [
     "family": "bytedance",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 4,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -6096,6 +6101,7 @@ export const i2vModels = [
     "family": "wan2.1",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 5,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -6564,6 +6570,7 @@ export const i2vModels = [
     "family": "veo3.1",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 3,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -6740,6 +6747,7 @@ export const i2vModels = [
     "family": "vidu-q2",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 7,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -6808,6 +6816,7 @@ export const i2vModels = [
     "endpoint": "vidu-q2-turbo-start-end-video",
     "family": "vidu-q2",
     "imageField": "image_url",
+    "lastImageField": "last_image",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -6868,6 +6877,7 @@ export const i2vModels = [
     "endpoint": "vidu-q2-pro-start-end-video",
     "family": "vidu-q2",
     "imageField": "image_url",
+    "lastImageField": "last_image",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -7054,6 +7064,7 @@ export const i2vModels = [
     "family": "grok",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 7,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -7140,6 +7151,7 @@ export const i2vModels = [
     "family": "kling-o1",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 7,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -7224,6 +7236,7 @@ export const i2vModels = [
     "endpoint": "pixverse-v5.5-i2v",
     "family": "pixverse-v5.5",
     "imageField": "images_list",
+    "lastImageField": "images_list",
     "hasPrompt": true,
     "inputs": {
       "prompt": {
@@ -7449,6 +7462,7 @@ export const i2vModels = [
     "family": "kling-o1",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 7,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -7667,6 +7681,140 @@ export const i2vModels = [
     }
   },
   {
+    "id": "kling-v3.0-omni-standard-image-to-video",
+    "name": "Kling v3.0 Omni Standard Image To Video",
+    "endpoint": "kling-v3.0-omni-standard-image-to-video",
+    "family": "kling-v3.0-omni",
+    "imageField": "images_list",
+    "hasPrompt": true,
+    "maxImages": 4,
+    "inputs": {
+      "prompt": {
+        "type": "string",
+        "title": "Prompt",
+        "name": "prompt",
+        "description": "Text prompt describing the video.",
+        "examples": [
+          "During an intense basketball game, gravity suddenly breaks apart. Players begin running sideways across the arena walls while the court folds upward into impossible angles. The basketball floats briefly before being slammed through the hoop as the camera rotates dynamically with the shifting gravity."
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "title": "Aspect Ratio",
+        "name": "aspect_ratio",
+        "description": "Aspect ratio of the output video.",
+        "enum": [
+          "9:16",
+          "16:9",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "int",
+        "title": "Duration",
+        "name": "duration",
+        "description": "Duration of the generated video in seconds.",
+        "enum": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "default": 5
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "title": "Generate Audio",
+        "name": "generate_audio",
+        "description": "When enabled, generate native audio with the video (adds to cost).",
+        "default": false
+      }
+    }
+  },
+  {
+    "id": "kling-v3.0-omni-pro-image-to-video",
+    "name": "Kling v3.0 Omni Pro Image To Video",
+    "endpoint": "kling-v3.0-omni-pro-image-to-video",
+    "family": "kling-v3.0-omni",
+    "imageField": "images_list",
+    "hasPrompt": true,
+    "maxImages": 4,
+    "inputs": {
+      "prompt": {
+        "type": "string",
+        "title": "Prompt",
+        "name": "prompt",
+        "description": "Text prompt describing the video.",
+        "examples": [
+          "A high-speed train races forward nonstop while the environment transforms every few seconds—from snowy mountains to neon cyberpunk city to volcanic wasteland. Sparks fly from the tracks as the camera stays tightly locked alongside the speeding train during each violent world transition."
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "title": "Aspect Ratio",
+        "name": "aspect_ratio",
+        "description": "Aspect ratio of the output video.",
+        "enum": [
+          "9:16",
+          "16:9",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "int",
+        "title": "Duration",
+        "name": "duration",
+        "description": "Duration of the generated video in seconds.",
+        "enum": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "default": 5
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "title": "Generate Audio",
+        "name": "generate_audio",
+        "description": "When enabled, generate native audio with the video (adds to cost).",
+        "default": false
+      }
+    }
+  },
+  {
+    "id": "kling-v3.0-omni-4k-image-to-video",
+    "name": "Kling v3.0 Omni 4K Image To Video",
+    "endpoint": "kling-v3.0-omni-4k-image-to-video",
+    "family": "kling-v3.0-omni",
+    "imageField": "images_list",
+    "hasPrompt": true,
+    "maxImages": 4,
+    "inputs": {
+      "prompt": {
+        "type": "string",
+        "title": "Prompt",
+        "name": "prompt",
+        "description": "Text prompt describing the video.",
+        "examples": [
+          "A cat in @image1 wakes up and walks towards the camera in slow motion."
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "title": "Aspect Ratio",
+        "name": "aspect_ratio",
+        "description": "Aspect ratio of the output video.",
+        "enum": [
+          "9:16",
+          "16:9",
+          "1:1"
+        ],
+        "default": "16:9"
+      },
+      "duration": {
+        "type": "int",
+        "title": "Duration",
+        "name": "duration",
+        "description": "Duration of the generated video in seconds.",
+        "enum": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "default": 5
+      }
+    }
+  },
+  {
     "id": "kling-v3.0-pro-image-to-video",
     "name": "Kling v3.0 Pro Image To Video",
     "endpoint": "kling-v3.0-pro-image-to-video",
@@ -7747,6 +7895,7 @@ export const i2vModels = [
     "family": "seedance-v2.0",
     "imageField": "images_list",
     "hasPrompt": true,
+    "maxImages": 5,
     "inputs": {
       "prompt": {
         "type": "string",
@@ -7784,6 +7933,14 @@ export const i2vModels = [
 
 export const getI2IModelById = (id) => i2iModels.find(m => m.id === id);
 export const getI2VModelById = (id) => i2vModels.find(m => m.id === id);
+
+export const getMaxImagesForI2VModel = (modelId) => {
+    const model = getI2VModelById(modelId);
+    if (!model) return 1;
+    if (model.maxImages) return model.maxImages;
+    if (model.lastImageField) return 2;
+    return 1;
+};
 
 export const getAspectRatiosForI2IModel = (modelId) => {
     const model = getI2IModelById(modelId);

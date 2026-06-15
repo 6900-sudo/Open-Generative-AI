@@ -3,7 +3,7 @@ import { getModelById, getVideoModelById, getI2IModelById, getI2VModelById, getV
 export class MuapiClient {
     constructor() {
         // Ideally user provides this in settings
-        this.baseUrl = import.meta.env.DEV ? '' : 'https://api.muapi.ai';
+        this.baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.DEV) ? '' : 'https://api.muapi.ai';
     }
 
     getKey() {
@@ -318,7 +318,13 @@ export class MuapiClient {
 
         // Place image in the correct field for this model
         const imageField = modelInfo?.imageField || 'image_url';
-        if (params.image_url) {
+        if (params.images_list && params.images_list.length > 0) {
+            if (imageField === 'images_list') {
+                finalPayload.images_list = params.images_list;
+            } else {
+                finalPayload[imageField] = params.images_list[0];
+            }
+        } else if (params.image_url) {
             if (imageField === 'images_list') {
                 finalPayload.images_list = [params.image_url];
             } else {
@@ -330,7 +336,14 @@ export class MuapiClient {
         // Server-side param name varies (last_image vs end_image_url).
         const lastImageField = modelInfo?.lastImageField;
         if (lastImageField && params.last_image) {
-            finalPayload[lastImageField] = params.last_image;
+            if (lastImageField === 'images_list') {
+                if (!finalPayload.images_list) finalPayload.images_list = [];
+                if (finalPayload.images_list.indexOf(params.last_image) === -1) {
+                    finalPayload.images_list.push(params.last_image);
+                }
+            } else {
+                finalPayload[lastImageField] = params.last_image;
+            }
         }
 
         if (params.aspect_ratio) finalPayload.aspect_ratio = params.aspect_ratio;
