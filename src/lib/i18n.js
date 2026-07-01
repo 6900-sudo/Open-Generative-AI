@@ -1,12 +1,51 @@
 const LANG_KEY = 'og_lang';
 
-export function getLang() {
-    return localStorage.getItem(LANG_KEY) || 'en';
+/** Normalize legacy `zh` and browser locales to BCP-47 zh-CN. */
+export function normalizeLang(raw) {
+    if (!raw) return 'en';
+    const lower = String(raw).toLowerCase();
+    if (lower === 'zh' || lower.startsWith('zh-') || lower.startsWith('zh_')) return 'zh-CN';
+    return lower === 'zh-cn' ? 'zh-CN' : 'en';
 }
 
-export function setLang(lang) {
+/** Detect browser locale on first visit; migrates stored `zh` → `zh-CN`. */
+export function initLocale() {
+    if (typeof localStorage === 'undefined') return 'en';
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored) {
+        const normalized = normalizeLang(stored);
+        if (normalized !== stored) localStorage.setItem(LANG_KEY, normalized);
+        return normalized;
+    }
+    const detected = typeof navigator !== 'undefined' ? navigator.language : 'en';
+    const lang = normalizeLang(detected);
     localStorage.setItem(LANG_KEY, lang);
-    location.reload();
+    return lang;
+}
+
+export function getLang() {
+    if (typeof localStorage === 'undefined') return 'en';
+    const stored = localStorage.getItem(LANG_KEY);
+    if (!stored) return initLocale();
+    const normalized = normalizeLang(stored);
+    if (normalized !== stored) localStorage.setItem(LANG_KEY, normalized);
+    return normalized;
+}
+
+export function setLang(lang, { reload = true } = {}) {
+    const normalized = normalizeLang(lang);
+    localStorage.setItem(LANG_KEY, normalized);
+    if (reload && typeof location !== 'undefined') {
+        location.reload();
+    } else if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('og_lang_change', { detail: normalized }));
+    }
+}
+
+function dictFor(lang) {
+    const key = normalizeLang(lang);
+    if (key === 'zh-CN') return translations['zh-CN'] || translations.zh;
+    return translations.en;
 }
 
 const translations = {
@@ -199,6 +238,17 @@ const translations = {
         'localModels.probing': 'Probing...',
         'localModels.errorLoading': 'Error loading models: ',
         'localModels.deleteConfirm': (name) => `Delete "${name}"? You'll need to re-download it to use it again.`,
+
+        // Web shell
+        'web.settingsTitle': 'Settings — API key, local models, preferences',
+        'web.switchToEn': 'Switch to English',
+        'web.switchToZh': '切换为中文',
+
+        // MCP & CLI page
+        'mcp.tagline': 'For developers & AI agents',
+        'mcp.title': 'MCP & CLI',
+        'mcp.subtitle': 'Use Open Generative AI from your terminal, your IDE, or any MCP-compatible assistant. Generate cinematic images, videos, and audio across 100+ models — without leaving your workflow.',
+        'mcp.quickStart': 'Quick start',
     },
     zh: {
         // Navigation
@@ -389,19 +439,32 @@ const translations = {
         'localModels.probing': '探测中...',
         'localModels.errorLoading': '加载模型时出错：',
         'localModels.deleteConfirm': (name) => `删除"${name}"？您需要重新下载才能再次使用。`,
+
+        // Web shell
+        'web.settingsTitle': '设置 — API 密钥、本地模型、偏好',
+        'web.switchToEn': 'Switch to English',
+        'web.switchToZh': '切换为中文',
+
+        // MCP & CLI page
+        'mcp.tagline': '面向开发者与 AI 智能体',
+        'mcp.title': 'MCP & CLI',
+        'mcp.subtitle': '在终端、IDE 或任何兼容 MCP 的助手中使用 Open Generative AI。跨 100+ 模型生成电影级图像、视频和音频 — 无需离开您的工作流。',
+        'mcp.quickStart': '快速开始',
     },
 };
 
+translations['zh-CN'] = translations.zh;
+
 export function t(key) {
     const lang = getLang();
-    const dict = translations[lang] || translations.en;
+    const dict = dictFor(lang);
     const val = dict[key] !== undefined ? dict[key] : (translations.en[key] !== undefined ? translations.en[key] : key);
     return typeof val === 'function' ? val : val;
 }
 
 export function tf(key, ...args) {
     const lang = getLang();
-    const dict = translations[lang] || translations.en;
+    const dict = dictFor(lang);
     const val = dict[key] !== undefined ? dict[key] : (translations.en[key] !== undefined ? translations.en[key] : key);
     return typeof val === 'function' ? val(...args) : val;
 }

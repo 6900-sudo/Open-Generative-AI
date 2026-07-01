@@ -14,6 +14,7 @@ import {
   getMaxImagesForI2IModel,
   getEffectsForI2IModel,
   getDefaultEffectForI2IModel,
+  getI2IModelById,
 } from "../models.js";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ async function downloadImage(url, filename) {
 
 // ─── UploadButton (inline picker) ───────────────────────────────────────────
 
-function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [] }) {
+function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [], label = null }) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedEntries, setSelectedEntries] = useState([]); // [{url, thumbnail}]
@@ -383,15 +384,14 @@ function UploadButton({ apiKey, maxImages, onSelect, onClear, initialUrls = [] }
     );
   }
 
+  const defaultLabel = isMulti ? `Add up to ${maxImages} images` : "Reference image";
   const triggerTitle = hasSelection
     ? count > 1
       ? `${count} of ${maxImages} images selected — click to manage`
       : isMulti
         ? `1 image selected — click to add more (up to ${maxImages})`
-        : "Reference image"
-    : isMulti
-      ? `Add up to ${maxImages} images`
-      : "Reference image";
+        : label || "Reference image"
+    : label || defaultLabel;
 
   return (
     <div className="relative">
@@ -763,6 +763,7 @@ export default function ImageStudio({
   // ── Prompt / upload state ───────────────────────────────────────────────
   const [prompt, setPrompt] = useState("");
   const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
+  const [swapImageUrl, setSwapImageUrl] = useState(null);
 
   // ── UI state ────────────────────────────────────────────────────────────
   const [dropdownOpen, setDropdownOpen] = useState(null); // 'model' | 'ar' | 'quality' | null
@@ -985,6 +986,7 @@ export default function ImageStudio({
     setSelectedModelName(m.name);
     setSelectedAr(ars[0] || "1:1");
     setSelectedQuality(resolutions[0] || null);
+    setSwapImageUrl(null);
     if (imageMode) {
       setMaxImages(getMaxImagesForI2IModel(m.id));
       const effects = getEffectsForI2IModel(m.id);
@@ -1033,6 +1035,11 @@ export default function ImageStudio({
         alert("Please upload a reference image first.");
         return;
       }
+      const modelInfo = getI2IModelById(selectedModelId);
+      if (modelInfo?.swapField && !swapImageUrl) {
+        alert("Please upload a swap face image.");
+        return;
+      }
     } else {
       if (!prompt.trim()) {
         alert("Please enter a prompt to generate an image.");
@@ -1053,6 +1060,7 @@ export default function ImageStudio({
               image_url: uploadedImageUrls[0],
               aspect_ratio: selectedAr,
             };
+            if (swapImageUrl) genParams.swap_url = swapImageUrl;
             if (prompt.trim()) genParams.prompt = prompt.trim();
             if (currentQualityField && selectedQuality) {
               genParams[currentQualityField] = selectedQuality;
@@ -1228,6 +1236,16 @@ export default function ImageStudio({
               onClear={handleUploadClear}
               initialUrls={uploadedImageUrls}
             />
+            {imageMode && getI2IModelById(selectedModelId)?.swapField && (
+              <UploadButton
+                apiKey={apiKey}
+                maxImages={1}
+                onSelect={({ urls }) => setSwapImageUrl(urls[0] || null)}
+                onClear={() => setSwapImageUrl(null)}
+                initialUrls={swapImageUrl ? [swapImageUrl] : []}
+                label="Swap Face"
+              />
+            )}
             <div className="flex-1 flex flex-col gap-2">
               <textarea
                 ref={textareaRef}
