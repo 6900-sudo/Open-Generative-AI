@@ -1,0 +1,37 @@
+{
+  "model": "haiku",
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Bash(git *)",
+      "Bash(npx *)",
+      "Bash(yarn *)",
+      "Bash(make *)",
+      "Bash(pnpm *)",
+      "Edit",
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development",
+    "DEBUG": "false"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; if [[ $f == *.js || $f == *.ts || $f == *.jsx || $f == *.tsx || $f == *.json ]]; then npx prettier --write \"$f\" 2>/dev/null || true; fi; }",
+            "timeout": 15,
+            "statusMessage": "Formatting with prettier..."
+          }
+        ]
+      }
+    ]
+  }
+}
