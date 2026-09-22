@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "gbrain": {
+      "command": "gbrain",
+      "args": [
+        "serve",
+        "--surface",
+        "verbs"
+      ],
+      "env": {
+        "GBRAIN_HOME": "/root/.gbrain"
+      }
+    }
+  }
+}
