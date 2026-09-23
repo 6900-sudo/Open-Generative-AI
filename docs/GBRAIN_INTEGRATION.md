@@ -11,21 +11,25 @@ GBrain is a persistent knowledge brain for AI agents. This project has been conf
 
 ## Setup Status
 
-✅ **Initialized**: PGLite local brain at `~/.gbrain/brain.pglite`
-✅ **Memory writeback**: Enabled (salient mode) — captures important decisions automatically
-⏳ **Embeddings**: Not yet configured (optional but recommended for semantic search)
+✅ **Repository**: GBrain MCP configuration committed to `.claude/mcp/gbrain.json`
+⏳ **Local brain**: Initialize on your machine with `gbrain init --no-embedding`
+⏳ **Embeddings**: Optional (can add later with API key for semantic search)
 
 ## How to Use
 
-### 1. Enable MCP in Claude Code
+### 1. Initialize GBrain on Your Machine
 
-Add gbrain to Claude Code's MCP servers:
+First, initialize your local brain (runs once per machine):
 
 ```bash
-claude mcp add gbrain -- gbrain serve --surface verbs
+gbrain init --no-embedding  # Initialize without embeddings
 ```
 
-Then restart Claude Code. You'll have access to the 7-verb memory protocol:
+This creates `~/.gbrain/brain.pglite` and configuration on your machine.
+
+### 2. Restart Claude Code
+
+The MCP configuration (`.claude/mcp/gbrain.json`) loads automatically at startup. Restart Claude Code to activate it. You'll then have access to the 7-verb memory protocol:
 - `remember` — save a fact for future sessions
 - `recall` — retrieve remembered facts by topic
 - `entity` — query information about a specific person/company/project
@@ -34,7 +38,7 @@ Then restart Claude Code. You'll have access to the 7-verb memory protocol:
 - `context_pack` — get a summary of context for this brain
 - `delta` — get what's changed since last recall
 
-### 2. Quick Test
+### 3. Quick Test
 
 In a Claude Code session:
 
@@ -50,7 +54,7 @@ recall: "my Python style"
 
 It will remember across sessions — the answer comes from gbrain, not chat history.
 
-### 3. Capturing Knowledge
+### 4. Capturing Knowledge
 
 **Manually capture a note:**
 ```bash
@@ -67,7 +71,7 @@ gbrain capture --file ./notes/2026-09-12-meeting.md
 echo "Completed the performance audit" | gbrain capture --stdin
 ```
 
-### 4. Querying Your Brain
+### 5. Querying Your Brain
 
 **Keyword search (fast, works now):**
 ```bash

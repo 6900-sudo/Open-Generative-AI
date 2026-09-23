@@ -4,16 +4,26 @@ GBrain is now integrated with this project. This guide gets you using it in 5 mi
 
 ## What You Have
 
-✅ Local brain initialized at `~/.gbrain/brain.pglite`
-✅ Memory writeback enabled (auto-captures decisions)
-✅ MCP configuration ready (`.claude/mcp/gbrain.json`)
-✅ 7-verb memory protocol loaded
+✅ GBrain integrated (repository-level MCP configuration ready)
+✅ MCP configuration (`.claude/mcp/gbrain.json`)
+✅ 7-verb memory protocol available
+⏳ Local brain pending — initialize on your machine with `gbrain init`
 
-## Step 1: Restart Claude Code
+## Step 1: Initialize GBrain on Your Machine
 
-The MCP wiring loads at startup. Restart Claude Code (desktop or CLI) after the integration is complete.
+First, initialize your local brain:
 
-## Step 2: Test Memory Across Sessions
+```bash
+gbrain init --no-embedding  # Initialize without embeddings (optional, can add later)
+```
+
+This creates `~/.gbrain/brain.pglite` and configuration on your machine.
+
+## Step 2: Restart Claude Code
+
+The MCP wiring loads at startup. Restart Claude Code (desktop or CLI) after the initialization is complete.
+
+## Step 3: Test Memory Across Sessions
 
 **In your first Claude Code session:**
 
@@ -33,7 +43,7 @@ recall: "what am I working on?"
 
 **Expected result:** Claude Code knows the answer even though chat history was cleared. The brain persisted it across sessions.
 
-## Step 3: Capture Knowledge
+## Step 4: Capture Knowledge
 
 As you work, capture insights:
 
@@ -48,7 +58,7 @@ echo "Implemented batch API response caching" | gbrain capture --stdin
 gbrain capture --file ./session-notes.md
 ```
 
-## Step 4: Query What You Know
+## Step 5: Query What You Know
 
 Ask the brain questions:
 
