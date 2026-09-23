@@ -1,5 +1,11 @@
 # GBrain Setup for Open-Generative-AI
 
+## Overview
+
+This project includes GBrain integration for persistent agent memory. The integration consists of:
+- **Repository-level configuration**: MCP setup and documentation (checked into git)
+- **Local user setup**: Each developer initializes their own `~/.gbrain/` brain on their machine
+
 ## What Was Installed
 
 This project now has GBrain integrated for persistent agent memory.
@@ -15,16 +21,23 @@ This project now has GBrain integrated for persistent agent memory.
 | **Search** | ✅ Keyword-only | Vector embeddings optional (requires API key) |
 | **Team Brain** | ⏳ Optional | Can upgrade to Supabase multi-user later |
 
-### Files Added
+### Files Added to Repository
 
 ```
 ├── .claude/mcp/gbrain.json                 # MCP configuration
 ├── docs/GBRAIN_INTEGRATION.md              # Full integration guide
-├── docs/GBRAIN_QUICKSTART.md               # 5-minute quick start
-└── ~/.gbrain/                              # Brain home (user's directory)
-    ├── brain.pglite                        # PGLite database
-    ├── config.json                         # Brain configuration
-    └── brain-repo/                         # Optional markdown pages dir
+└── docs/GBRAIN_QUICKSTART.md               # 5-minute quick start
+```
+
+### Local Setup (Created on Each User's Machine)
+
+When you run `gbrain init`, the following is created in your home directory (not in the repo):
+
+```
+~/.gbrain/
+├── brain.pglite                            # PGLite database (Postgres via WASM)
+├── config.json                             # Brain configuration
+└── brain-repo/                             # Optional markdown pages directory
 ```
 
 ### What It Does
