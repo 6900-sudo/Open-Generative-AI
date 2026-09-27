@@ -39,3 +39,27 @@ out/
 .env
 .env.*
 !.env.example
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build and cache
+dist/
+build/
+*.egg-info/
+__pycache__/
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
